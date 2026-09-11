@@ -1,26 +1,80 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Sitio público de una agencia.
+ *
+ * No es el backoffice: acá el que mira es alguien que quiere comprar un
+ * auto, casi siempre desde el teléfono. La foto manda, el precio le sigue,
+ * y todo lo demás se corre. El único color que varía entre agencias es
+ * --brand, que sale de su configuración; el resto del sistema es fijo para
+ * que ninguna agencia pueda romper su propio sitio con una combinación mala.
+ */
+@theme {
+  --color-paper: #ffffff;
+  --color-muted: #f5f4f1;
+  --color-ink: #14161a;
+  --color-ink-soft: #55595f;
+  --color-ink-faint: #8b9097;
+  --color-line: #e5e3dd;
+  --color-line-strong: #cfccc4;
+
+  --font-display: var(--font-familjen), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Lo sobreescribe el layout con el color de cada agencia. */
+    --brand: #14161a;
+  }
+
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--brand);
+    color: white;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * La ficha de vidriera: año, kilómetros, combustible y caja en una tira
+ * apretada bajo la foto. Es la información que alguien lee parado frente al
+ * auto antes de preguntar el precio, y en ese orden.
+ */
+.spec-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.spec-strip > * + *::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  border-radius: 999px;
+  background: var(--color-line-strong);
 }

@@ -16,7 +16,6 @@
     "@cuasar/db": "workspace:*",
     "@cuasar/core": "workspace:*",
     "@cuasar/ui": "workspace:*",
-    "@clerk/nextjs": "^7.9.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {

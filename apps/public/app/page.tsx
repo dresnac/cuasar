@@ -1,69 +1,126 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { Suspense } from 'react';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { CatalogFilters } from '@/components/catalog-filters';
+import { LeadForm } from '@/components/lead-form';
+import { SiteFooter, SiteHeader } from '@/components/site-chrome';
+import { CatalogSkeleton } from '@/components/skeletons';
+import { VehicleCard } from '@/components/vehicle-card';
+import { brandColor, currentAgency, seoOf } from '@/lib/agency';
+import { cachedCatalog, cachedFacets } from '@/lib/catalog';
 
-export default function Home() {
+export async function generateMetadata(): Promise<Metadata> {
+  const agency = await currentAgency();
+  if (!agency) return { title: 'Sitio no encontrado' };
+
+  const seo = seoOf(agency);
+  return {
+    title: seo.title,
+    description: seo.description,
+    openGraph: { title: seo.title, description: seo.description, type: 'website' },
+  };
+}
+
+/**
+ * Qué agencia es este sitio depende del header Host, así que el contenido no
+ * se puede prerenderizar: se renderiza por request, dentro de un límite de
+ * Suspense. Lo que sí se cachea —y es lo que importa— son las consultas al
+ * catálogo (ver lib/catalog.ts).
+ */
+export default function CatalogPage(props: PageProps<'/'>) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <Suspense fallback={<CatalogSkeleton />}>
+      <CatalogContent {...props} />
+    </Suspense>
+  );
+}
+
+async function CatalogContent({ searchParams }: PageProps<'/'>) {
+  const agency = await currentAgency();
+  if (!agency) notFound();
+
+  const params = await searchParams;
+  const [catalog, facets] = await Promise.all([
+    cachedCatalog(agency.agencyId, {
+      q: params.q,
+      brand: params.brand,
+      sort: params.sort,
+      page: params.page,
+    }),
+    cachedFacets(agency.agencyId),
+  ]);
+
+  return (
+    <div style={{ '--brand': brandColor(agency) } as React.CSSProperties}>
+      <SiteHeader agency={agency} />
+
+      <main className="mx-auto max-w-[1200px] px-5 py-8">
+        <div className="mb-6 flex flex-col gap-4">
+          <div>
+            <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight">
+              {catalog.total === 0
+                ? 'Todavía no hay unidades publicadas'
+                : `${catalog.total} ${catalog.total === 1 ? 'unidad disponible' : 'unidades disponibles'}`}
+            </h1>
+            <p className="mt-1 text-[15px] text-ink-soft">{seoOf(agency).description}</p>
+          </div>
+
+          {facets.brands.length > 0 && <CatalogFilters brands={facets.brands} />}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {catalog.items.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-line-strong px-6 py-16 text-center">
+            <p className="font-display text-[18px] font-semibold tracking-tight">
+              Sin resultados
+            </p>
+            <p className="mt-1 text-[15px] text-ink-soft">
+              Probá con otra marca, o escribinos y te avisamos cuando entre algo así.
+            </p>
+            <Link
+              href="/"
+              className="mt-4 inline-block text-[14px] underline underline-offset-4"
+              style={{ color: 'var(--brand)' }}
+            >
+              Ver todo el stock
+            </Link>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-2 gap-x-5 gap-y-8 lg:grid-cols-3">
+            {catalog.items.map((vehicle, i) => (
+              <li key={vehicle.slug}>
+                <VehicleCard vehicle={vehicle} priority={i < 3} />
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {catalog.pages > 1 && (
+          <nav aria-label="Paginación" className="mt-10 flex justify-center gap-2">
+            {Array.from({ length: catalog.pages }, (_, i) => i + 1).map((n) => (
+              <Link
+                key={n}
+                href={{ pathname: '/', query: { ...params, page: n } }}
+                aria-current={n === catalog.page ? 'page' : undefined}
+                className="tabular grid size-9 place-items-center rounded-lg border text-[14px]"
+                style={
+                  n === catalog.page
+                    ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'white' }
+                    : { borderColor: 'var(--color-line-strong)' }
+                }
+              >
+                {n}
+              </Link>
+            ))}
+          </nav>
+        )}
+
+        <section className="mt-16 max-w-md">
+          <LeadForm vehicleSlug={null} />
+        </section>
       </main>
+
+      <SiteFooter agency={agency} />
     </div>
   );
 }

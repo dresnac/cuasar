@@ -17,6 +17,7 @@ import {
   updateVehicle,
   type ImageInput,
 } from '@cuasar/core/services';
+import { revalidatePublicCatalog } from '@/lib/revalidate-public';
 import { requireSession } from '@/lib/tenant';
 
 export type FormState = { error?: string; issues?: Record<string, string> };
@@ -174,6 +175,7 @@ export async function updateVehicleAction(
 
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
+  if (listPrice) await revalidatePublicCatalog(session.ctx.agencyId);
   return {};
 }
 
@@ -186,6 +188,7 @@ export async function transitionAction(vehicleId: string, to: VehicleStatus): Pr
 
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
+  await revalidatePublicCatalog(session.ctx.agencyId);
   return {};
 }
 
@@ -213,6 +216,7 @@ export async function attachImagesAction(vehicleId: string, images: ImageInput[]
 
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
+  await revalidatePublicCatalog(session.ctx.agencyId);
   return {};
 }
 
@@ -234,6 +238,7 @@ export async function removeImageAction(vehicleId: string, imageId: string): Pro
 
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
+  await revalidatePublicCatalog(session.ctx.agencyId);
   return {};
 }
 
@@ -246,6 +251,7 @@ export async function setCoverAction(vehicleId: string, imageId: string): Promis
 
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
+  await revalidatePublicCatalog(session.ctx.agencyId);
   return {};
 }
 
@@ -280,6 +286,7 @@ export async function registerCostAction(
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
   revalidatePath('/contabilidad');
+  await revalidatePublicCatalog(session.ctx.agencyId);
   return {};
 }
 

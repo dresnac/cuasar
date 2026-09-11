@@ -71,7 +71,7 @@ packages/
 **Por qué dos apps y no una:** el sitio público y el backoffice tienen perfiles de caché opuestos. El público debe ser estático/ISR y servirse desde CDN sin tocar la DB en el 95% de los requests; el backoffice es dinámico y autenticado. Separarlos permite que un pico de tráfico público (una publicación viral, un bot de scraping) no degrade el backoffice, y que cada uno escale y se despliegue por su cuenta.
 
 ### Resolución de tenant
-- **Público:** middleware lee el `Host` → busca en **Edge Config** (mapa `host → agency_id`, replicado global, lectura ~0ms sin DB) → inyecta header `x-agency-id` → las rutas renderizan con `cacheTag(\`agency:\${id}\`)`. El mapa se reescribe cuando una agencia cambia dominio o se da de baja.
+- **Público:** `proxy.ts` lee el `Host` → resuelve `host → agency_id` contra un mapa en memoria del proceso con TTL de 5 minutos (los hosts desconocidos también se cachean, para que un dominio inventado no dispare una consulta) → inyecta el header `x-agency-id` → las rutas renderizan con `cacheTag('catalogo:<id>')`. Resolverlo en el proxy y no en la página también es lo que permite contestar un 404 real: con prerender parcial el estado ya viajó cuando la parte dinámica descubriría que no hay agencia.
 - **Backoffice:** el tenant sale de la sesión (organización activa), nunca de la URL.
 
 ### Modelo multi-tenant
@@ -300,7 +300,7 @@ Nada del dominio importa un SDK de tercero: el dominio escribe en `outbox`, un w
 | Base de datos | **Neon Postgres** (Marketplace) | El requisito es "construido en torno a la DB": Postgres relacional da integridad transaccional sobre plata y estados, JSONB donde hace falta flexibilidad, y RLS como muro de tenancy. Neon suma branching por preview y escalado a cero. |
 | ORM | **Drizzle** | SQL explícito y tipado; no esconde el plan de ejecución. Con foco en performance, no queremos un ORM que genere N+1 sin que se note. |
 | Imágenes | **Vercel Blob** + `next/image` | Uploads directos desde el browser (no pasan por la función), AVIF/WebP automático, CDN. La DB guarda solo metadata. |
-| Caché | **Upstash Redis** + ISR/`cacheTag` + Edge Config | Redis para agregados y rate-limit; Edge Config para el mapa host→tenant (lectura sin latencia de red). |
+| Caché | **PPR + `use cache` con `cacheTag`** por agencia | El catálogo se sirve prerenderizado con la parte dinámica en streaming, y se invalida por tag cuando la agencia publica. El mapa host→tenant vive en memoria del proxy, no en un store aparte: una sola fuente de verdad, y si el volumen lo pide se cambia esa función sola. Redis entra cuando haya rate-limit distribuido que justificarlo. |
 | Auth | **Clerk** (Marketplace), solo identidad | Clerk resuelve sign-in, cuentas y recuperación de contraseña. **La tenencia no**: la agencia activa, el rol y los asientos salen de `memberships`. Ver la nota de abajo. |
 | Pagos | **Stripe** (Marketplace) + **MercadoPago**, elegido por la agencia | Stripe resuelve tarjeta internacional, portal y dunning; MercadoPago (preapproval) es imprescindible para la agencia argentina sin tarjeta habilitada en USD. Ambos detrás de un `BillingPort` único (§5). |
 | Moneda | **Base por agencia** (`base_currency`, USD por defecto) | Una agencia que opera en USD y otra que opera en pesos necesitan márgenes en su propia unidad. El `fx_rate` congelado por transacción hace que el histórico no se mueva. |
@@ -308,6 +308,16 @@ Nada del dominio importa un SDK de tercero: el dominio escribe en `outbox`, un w
 | Validación | **Zod** compartido cliente/servidor | Un solo esquema por entrada. |
 | Testing | **Vitest** (dominio y contabilidad) + **Playwright** (flujos críticos) | La lógica de plata y transiciones se testea unitariamente; el resto, end-to-end sobre los 5 flujos que no pueden romperse. |
 | Observabilidad | Vercel Analytics + Speed Insights + Sentry | El requisito de velocidad necesita medición, no intuición. |
+
+### Por qué el mapa host→agencia no está en Edge Config
+
+El diseño original lo ponía en Edge Config. Al implementarlo, el costo apareció
+antes que el beneficio: un store aparte hay que mantenerlo sincronizado con la
+base cada vez que una agencia cambia de dominio o se suspende, y un mapa que
+quedó viejo sirve el sitio equivocado. Cachear la consulta en el proceso del
+proxy da la misma latencia después del primer request, con una sola fuente de
+verdad. `resolveAgencyByHost` es una función: si el volumen lo justifica, se
+cambia ahí y el resto del sitio no se entera.
 
 ### Por qué Clerk no maneja las agencias
 

@@ -84,3 +84,24 @@ export async function withPlatform<T>(
 }
 
 export { client as pgClient };
+
+/**
+ * Transacción del sitio público.
+ *
+ * La agencia se conoce (salió del dominio), pero no hay usuario. El rol
+ * `app_public` solo puede leer el catálogo y dejar una consulta: no alcanza
+ * la tabla `vehicles` —donde vive el precio de compra— ni puede releer los
+ * leads que él mismo dejó. Es la única parte del sistema expuesta a internet
+ * sin autenticación, así que sus privilegios se definen por lo que necesita,
+ * no por lo que le sobra.
+ */
+export async function withPublicAgency<T>(
+  agencyId: string,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return dbAdmin.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.agency_id', ${agencyId}, true)`);
+    await tx.execute(sql`set local role app_public`);
+    return fn(tx);
+  });
+}

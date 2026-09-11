@@ -53,6 +53,33 @@ create policy users_tenant_visibility on users to app_tenant
     )
   );
 
+/*
+ * El sitio público. Mismo contexto de agencia que el backoffice, pero con
+ * un rol que casi no tiene privilegios: si algún día una consulta suya
+ * apuntara a la tabla equivocada, el GRANT la frena antes que la política.
+ */
+drop policy if exists vehicle_public_view_public_read on vehicle_public_view;
+create policy vehicle_public_view_public_read on vehicle_public_view to app_public
+  using (agency_id = current_agency_id());
+
+drop policy if exists agencies_public_read on agencies;
+create policy agencies_public_read on agencies to app_public
+  using (id = current_agency_id() and status = 'ACTIVE');
+
+drop policy if exists agency_settings_public_read on agency_settings;
+create policy agency_settings_public_read on agency_settings to app_public
+  using (agency_id = current_agency_id());
+
+-- Solo puede dejar consultas, nunca leerlas: un formulario público que
+-- pudiera releer la bandeja sería una filtración de datos de contacto.
+drop policy if exists leads_public_insert on leads;
+create policy leads_public_insert on leads to app_public
+  with check (agency_id = current_agency_id() and source = 'PUBLIC_SITE');
+
+drop policy if exists vehicle_events_public_insert on vehicle_events;
+create policy vehicle_events_public_insert on vehicle_events to app_public
+  with check (agency_id = current_agency_id() and source = 'WEB');
+
 -- `plans` es catálogo público de la plataforma: lectura para todos.
 alter table plans enable row level security;
 drop policy if exists plans_readable on plans;

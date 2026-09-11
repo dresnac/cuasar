@@ -42,6 +42,11 @@ async function main() {
     name: 'Automotores del Sur',
     slug: 'del-sur',
     baseCurrency: 'USD',
+    brandColor: '#1b4de4',
+    phone: '+54 11 5555-0000',
+    address: 'Av. Hipólito Yrigoyen 4820',
+    city: 'Lanús',
+    tagline: 'Usados seleccionados con garantía escrita y service al día.',
     owner: { email: 'owner@delsur.test', name: 'Marina Sosa' },
     sales: { email: 'ventas@delsur.test', name: 'Diego Paredes' },
   });
@@ -50,6 +55,11 @@ async function main() {
     name: 'Norte Motors',
     slug: 'norte-motors',
     baseCurrency: 'ARS',
+    brandColor: '#a8432a',
+    phone: '+54 11 4777-1200',
+    address: 'Av. Maipú 2340',
+    city: 'Olivos',
+    tagline: 'Camionetas y SUVs revisadas, financiación en el acto.',
     owner: { email: 'owner@nortemotors.test', name: 'Lucía Ferrer' },
     sales: { email: 'ventas@nortemotors.test', name: 'Tomás Aguirre' },
   });
@@ -80,6 +90,11 @@ type AgencySeed = {
   name: string;
   slug: string;
   baseCurrency: 'USD' | 'ARS';
+  brandColor: string;
+  phone: string;
+  address: string;
+  city: string;
+  tagline: string;
   owner: { email: string; name: string };
   sales: { email: string; name: string };
 };
@@ -99,9 +114,16 @@ async function seedAgency(spec: AgencySeed) {
 
   await dbAdmin.insert(s.agencySettings).values({
     agencyId,
-    branding: { primary: '#1f4ed8', logoUrl: null },
-    contact: { phone: '+54 11 5555-0000', address: 'Av. Siempreviva 742', city: 'Buenos Aires' },
-    seo: { title: spec.name, description: `Autos usados seleccionados en ${spec.name}` },
+    // Colores distintos a propósito: es la forma más rápida de ver que cada
+    // agencia tiene su sitio y no una copia del mismo.
+    branding: { primary: spec.brandColor, logoUrl: null },
+    contact: {
+      phone: spec.phone,
+      address: spec.address,
+      city: spec.city,
+      hours: 'Lunes a viernes de 9 a 18, sábados de 9 a 13',
+    },
+    seo: { title: spec.name, description: spec.tagline },
   });
 
   const people = await dbAdmin
@@ -240,7 +262,7 @@ async function seedVehicle(args: {
 
   const id = uuidv7();
   const acquiredAt = daysAgo(v.ageDays);
-  const slug = `${v.brand}-${v.model}-${v.year}-${id.slice(0, 6)}`
+  const slug = `${v.brand}-${v.model}-${v.year}-${id.replace(/-/g, '').slice(-6)}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-');
 

@@ -28,7 +28,7 @@ importers:
         version: 4.16.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@clerk/nextjs':
         specifier: ^7.9.2
-        version: 7.9.2(next@16.3.4(@types/node@22.20.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 7.9.2(next@16.3.4(@babel/core@7.29.7)(@types/node@22.20.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@cuasar/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -84,9 +84,6 @@ importers:
 
   apps/public:
     dependencies:
-      '@clerk/nextjs':
-        specifier: ^7.9.2
-        version: 7.9.2(next@16.3.4(@types/node@22.20.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@cuasar/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -3432,7 +3429,7 @@ snapshots:
       - react
       - react-dom
 
-  '@clerk/nextjs@7.9.2(next@16.3.4(@types/node@22.20.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@clerk/nextjs@7.9.2(next@16.3.4(@babel/core@7.29.7)(@types/node@22.20.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@clerk/backend': 3.17.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@clerk/react': 6.15.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

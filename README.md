@@ -13,7 +13,7 @@ El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— es
 | 0 | Monorepo, esquema de datos, RLS, dominio puro | ✅ |
 | 1 | Núcleo de vehículos (CRUD, fotos, estados, timeline) | ✅ |
 | 2 | Contabilidad y dashboard | ✅ |
-| 3 | Sitio público multi-tenant | pendiente |
+| 3 | Sitio público multi-tenant | ✅ |
 | 4 | Agenda y leads | pendiente |
 | 5 | Suscripciones (Stripe → MercadoPago) y panel de plataforma | pendiente |
 | 6 | Endurecimiento y performance medida | pendiente |
@@ -99,6 +99,13 @@ Cada agencia tiene su propia moneda base; `amount_base_cents` está expresado en
 la base *de esa agencia*, así que ningún agregado cruza agencias sin una
 conversión explícita.
 
+**El sitio público corre con un rol propio que casi no puede nada.**
+`withPublicAgency` baja a `app_public`, que solo lee `vehicle_public_view`,
+`agencies` y `agency_settings`, y solo escribe leads y eventos. No alcanza la
+tabla `vehicles` —donde vive el precio de compra— ni puede releer las consultas
+que él mismo deja. Es la única parte del sistema expuesta a internet sin
+autenticación, así que sus privilegios se definen por lo que necesita.
+
 **Vender y registrar la venta son el mismo acto.** `registerSale` inserta la fila
 en `vehicle_sales` y mueve el estado a `VENDIDO` en una sola transacción, y la UI
 no ofrece `VENDIDO` como transición suelta: un vehículo vendido sin fila de venta
@@ -121,6 +128,5 @@ parecen correctos y no lo son. Ver `packages/core/src/accounting.ts`.
 | Neon Postgres (gru1) | Base de datos | ✅ aprovisionado |
 | Clerk | Identidad (sign-in, cuentas) | ✅ aprovisionado |
 | Vercel Blob | Fotos de vehículos | ✅ aprovisionado |
-| Upstash Redis | Cache de agregados, rate limit | Fase 3 |
-| Edge Config | Mapa host → agencia | Fase 3 |
+| Upstash Redis | Rate limit distribuido | cuando haga falta |
 | Stripe / MercadoPago | Suscripciones | Fase 5 |
