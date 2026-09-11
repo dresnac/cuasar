@@ -1,0 +1,5 @@
+{
+  "extends": "@cuasar/config/tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

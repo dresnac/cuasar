@@ -1,0 +1,23 @@
+{
+  "name": "@cuasar/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ports": "./src/ports/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cuasar/db": "workspace:*",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@cuasar/config": "workspace:*",
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.5"
+  }
+}

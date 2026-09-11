@@ -1,0 +1,22 @@
+{
+  "name": "@cuasar/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@cuasar/config": "workspace:*",
+    "@types/react": "^19",
+    "react": "^19.2.8",
+    "typescript": "^5.9.0"
+  },
+  "peerDependencies": { "react": "^19" }
+}
