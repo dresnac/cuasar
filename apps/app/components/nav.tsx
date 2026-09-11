@@ -7,12 +7,12 @@ import { cx } from './ui';
 const SECTIONS = [
   { href: '/vehiculos', label: 'Vehículos', ready: true, finance: false },
   { href: '/contabilidad', label: 'Contabilidad', ready: true, finance: true },
-  { href: '/agenda', label: 'Agenda', ready: false, finance: false },
-  { href: '/leads', label: 'Consultas', ready: false, finance: false },
+  { href: '/agenda', label: 'Agenda', ready: true, finance: false },
+  { href: '/leads', label: 'Consultas', ready: true, finance: false },
   { href: '/sitio', label: 'Sitio público', ready: false, finance: false },
 ] as const;
 
-export function Nav({ showFinance }: { showFinance: boolean }) {
+export function Nav({ showFinance, newLeads }: { showFinance: boolean; newLeads: number }) {
   const pathname = usePathname();
 
   // Una sección que el rol no puede abrir no se muestra apagada: se saca.
@@ -34,7 +34,20 @@ export function Nav({ showFinance }: { showFinance: boolean }) {
                 : 'text-ink-soft hover:bg-paper hover:text-ink',
             )}
           >
-            {s.label}
+            <span className="flex items-center justify-between gap-2">
+              {s.label}
+              {s.href === '/leads' && newLeads > 0 && (
+                <span
+                  className={cx(
+                    'tabular rounded-full px-1.5 text-[11px] font-semibold leading-[18px]',
+                    pathname.startsWith(s.href) ? 'bg-paper text-ink' : 'bg-signal text-white',
+                  )}
+                  aria-label={`${newLeads} sin atender`}
+                >
+                  {newLeads}
+                </span>
+              )}
+            </span>
           </Link>
         ) : (
           <span

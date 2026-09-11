@@ -4,3 +4,6 @@ export * from './timeline';
 export * from './accounting';
 export * from './dashboard';
 export * from './public';
+export * from './leads';
+export * from './appointments';
+export * from './outbox';

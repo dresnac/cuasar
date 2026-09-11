@@ -153,6 +153,19 @@ async function seedAgency(spec: AgencySeed) {
     seatsPurchased: 5,
   });
 
+  // Horario de atención: lunes a viernes de 9 a 18, sábados de 9 a 13.
+  // Sin esto la agenda no tiene de dónde sacar huecos libres.
+  await dbAdmin.insert(s.availability).values([
+    ...[1, 2, 3, 4, 5].map((weekday) => ({
+      agencyId,
+      userId: null,
+      weekday,
+      fromTime: '09:00:00',
+      toTime: '18:00:00',
+    })),
+    { agencyId, userId: null, weekday: 6, fromTime: '09:00:00', toTime: '13:00:00' },
+  ]);
+
   const fleet = buildFleet(spec.baseCurrency);
 
   for (const v of fleet) {

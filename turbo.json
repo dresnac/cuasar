@@ -20,7 +20,10 @@
     "NEXT_PUBLIC_APP_URL",
     "PUBLIC_SITE_URL",
     "REVALIDATE_SECRET",
-    "DEV_AGENCY_SLUG"
+    "DEV_AGENCY_SLUG",
+    "RESEND_API_KEY",
+    "EMAIL_FROM",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {
@@ -50,6 +53,18 @@
     "test": {
       "dependsOn": [
         "^build"
+      ]
+    },
+    "@cuasar/core#test": {
+      "dependsOn": [
+        "^build",
+        "@cuasar/db#test"
+      ]
+    },
+    "@cuasar/integrations#test": {
+      "dependsOn": [
+        "^build",
+        "@cuasar/core#test"
       ]
     }
   }

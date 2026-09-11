@@ -56,6 +56,7 @@ export type Membership = {
   agencyName: string;
   agencySlug: string;
   baseCurrency: string;
+  timezone: string;
   role: Role;
 };
 
@@ -68,6 +69,7 @@ export const myMemberships = cache(async (): Promise<Membership[]> => {
       agencyName: agencies.name,
       agencySlug: agencies.slug,
       baseCurrency: agencies.baseCurrency,
+      timezone: agencies.timezone,
       role: memberships.role,
     })
     .from(memberships)

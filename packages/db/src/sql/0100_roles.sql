@@ -56,6 +56,9 @@ alter default privileges in schema public
 grant select on vehicle_public_view, agencies, agency_settings to app_public;
 grant insert on leads to app_public;
 grant insert on vehicle_events to app_public;
+-- Encolar una notificación es parte de recibir una consulta, y va en la misma
+-- transacción. Puede escribir en la cola; no puede leerla ni drenarla.
+grant insert on outbox to app_public;
 grant usage on all sequences in schema public to app_public;
 
 alter default privileges in schema public

@@ -35,6 +35,9 @@ importers:
       '@cuasar/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@cuasar/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       '@cuasar/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -182,6 +185,25 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.13
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@22.20.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.13)
+
+  packages/integrations:
+    dependencies:
+      '@cuasar/core':
+        specifier: workspace:*
+        version: link:../core
+      '@cuasar/db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      '@cuasar/config':
+        specifier: workspace:*
+        version: link:../config
       typescript:
         specifier: ^5.9.0
         version: 5.9.3

@@ -30,6 +30,13 @@ queda sin política y sin aislamiento.
 
 ## Tests
 
+Las tres suites que tocan la base corren **en serie**, encadenadas en
+`turbo.json` (`db#test` → `core#test` → `integrations#test`). Comparten una sola
+base de datos: en paralelo se pisan los datos entre ellas y fallan de formas que
+no tienen nada que ver con el código. Cada suite limpia lo que crea y trabaja
+sobre su propia ventana de fechas, para que dos corridas seguidas den lo mismo.
+
+
 - `packages/core/tests/` — dominio puro, sin DB. Rápidos, corren siempre.
 - `packages/db/tests/isolation.test.ts` — RLS y privilegios contra una base real.
   Necesita `pnpm db:seed` antes.

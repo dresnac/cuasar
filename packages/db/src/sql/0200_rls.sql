@@ -80,6 +80,10 @@ drop policy if exists vehicle_events_public_insert on vehicle_events;
 create policy vehicle_events_public_insert on vehicle_events to app_public
   with check (agency_id = current_agency_id() and source = 'WEB');
 
+drop policy if exists outbox_public_insert on outbox;
+create policy outbox_public_insert on outbox to app_public
+  with check (agency_id = current_agency_id());
+
 -- `plans` es catálogo público de la plataforma: lectura para todos.
 alter table plans enable row level security;
 drop policy if exists plans_readable on plans;

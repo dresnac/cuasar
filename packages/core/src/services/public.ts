@@ -16,6 +16,7 @@ import {
 } from '@cuasar/db';
 import { z } from 'zod';
 import { fail, ok, type Result } from '../errors';
+import { enqueue } from './outbox';
 
 const { agencies, agencySettings, vehiclePublicView, leads, vehicleEvents } = schema;
 
@@ -407,6 +408,12 @@ export async function createPublicLead(
         payload: { leadId },
       });
     }
+
+    // La notificación se encola con la misma transacción: si el lead no se
+    // guardó, el mail no sale. El payload lleva solo el id —los datos de
+    // contacto los busca el worker al momento de mandar— así que anonimizar
+    // una consulta antes de que salga el mail tampoco la filtra.
+    await enqueue(tx, agencyId, 'lead.received', { leadId });
 
     return ok({ id: leadId });
   });

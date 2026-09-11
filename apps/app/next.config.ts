@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   // Los paquetes del monorepo se publican como TypeScript sin compilar.
-  transpilePackages: ['@cuasar/db', '@cuasar/core', '@cuasar/ui'],
+  transpilePackages: ['@cuasar/db', '@cuasar/core', '@cuasar/ui', '@cuasar/integrations'],
   // Los listados construyen su URL desde los filtros activos; con rutas
   // tipadas cada query string necesitaría un cast que no aporta seguridad.
   typedRoutes: false,

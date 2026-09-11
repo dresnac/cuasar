@@ -14,7 +14,7 @@ El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— es
 | 1 | Núcleo de vehículos (CRUD, fotos, estados, timeline) | ✅ |
 | 2 | Contabilidad y dashboard | ✅ |
 | 3 | Sitio público multi-tenant | ✅ |
-| 4 | Agenda y leads | pendiente |
+| 4 | Agenda y leads | ✅ |
 | 5 | Suscripciones (Stripe → MercadoPago) y panel de plataforma | pendiente |
 | 6 | Endurecimiento y performance medida | pendiente |
 
@@ -25,10 +25,11 @@ apps/
   app/       Backoffice de agencia + panel de plataforma  (app.cuasar.app :3000)
   public/    Sitio público multi-tenant                   (*.cuasar.app   :3001)
 packages/
-  db/        Esquema Drizzle, migraciones, RLS, triggers, seed
-  core/      Dominio puro: estados, contabilidad, permisos, entitlements, puertos
-  ui/        Design system compartido
-  config/    tsconfig base
+  db/            Esquema Drizzle, migraciones, RLS, triggers, seed
+  core/          Dominio: estados, contabilidad, permisos, entitlements, servicios
+  integrations/  Adapters de terceros y el worker de la cola de salida
+  ui/            Design system compartido
+  config/        tsconfig base
 ```
 
 ## Arranque
@@ -99,6 +100,15 @@ Cada agencia tiene su propia moneda base; `amount_base_cents` está expresado en
 la base *de esa agencia*, así que ningún agregado cruza agencias sin una
 conversión explícita.
 
+**Nada sale al mundo desde adentro de un request.** Un mail, una publicación
+en MercadoLibre o un evento de calendario se encolan en `outbox` dentro de la
+misma transacción que el cambio, y un worker los drena
+(`/api/cron/outbox-drain`, cada cinco minutos). Mandar el mail adentro del
+request es peor de las dos maneras: si el proveedor no contesta, el usuario ve
+un error y el cambio quedó a medias. El payload guarda solo ids —los datos se
+buscan al momento de enviar— así que una consulta anonimizada entre medio no
+termina filtrada en el mail.
+
 **El sitio público corre con un rol propio que casi no puede nada.**
 `withPublicAgency` baja a `app_public`, que solo lee `vehicle_public_view`,
 `agencies` y `agency_settings`, y solo escribe leads y eventos. No alcanza la
@@ -128,5 +138,6 @@ parecen correctos y no lo son. Ver `packages/core/src/accounting.ts`.
 | Neon Postgres (gru1) | Base de datos | ✅ aprovisionado |
 | Clerk | Identidad (sign-in, cuentas) | ✅ aprovisionado |
 | Vercel Blob | Fotos de vehículos | ✅ aprovisionado |
+| Resend | Mails de aviso | pendiente: necesita un dominio verificado |
 | Upstash Redis | Rate limit distribuido | cuando haga falta |
 | Stripe / MercadoPago | Suscripciones | Fase 5 |
