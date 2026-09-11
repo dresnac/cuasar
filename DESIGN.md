@@ -393,5 +393,6 @@ Presupuesto de performance medido (objetivo: catálogo público LCP < 1.5s, back
 | 3 | Asientos | **USD 100/mes con 5 usuarios incluidos**, asiento adicional con cargo. |
 | 4 | Roles | **`SALES` no ve adquisición, costos ni márgenes** — filtrado en el servicio de dominio, no en la UI. |
 
-### Pendiente
-**Dominio de la plataforma.** Necesito el dominio raíz para fijar el esquema de subdominios por agencia (`<agencia>.<dominio>`), los certificados wildcard y el mapa de Edge Config. Mientras tanto el diseño usa `cuasar.app` como marcador; cambiarlo después es tocar configuración, no código.
+| 5 | Dominio | **cuasar.app**. Subdominio por agencia (`<slug>.cuasar.app`) siempre activo; dominio propio es un flujo opcional verificado. |
+
+Diseño aprobado el 2026-09-11. La implementación arranca por la Fase 0 (§8).

@@ -1,7 +1,16 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Los paquetes del monorepo se publican como TypeScript sin compilar.
+  transpilePackages: ['@cuasar/db', '@cuasar/core', '@cuasar/ui'],
+  images: {
+    // Las fotos viven en Vercel Blob, nunca en la base de datos.
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: 'picsum.photos' },
+    ],
+  },
+  typedRoutes: true,
 };
 
 export default nextConfig;

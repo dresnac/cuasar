@@ -27,9 +27,25 @@ export const timestamps = {
  * `fxRate` no se recalcula jamás: un margen histórico tiene que seguir
  * dando lo mismo dentro de dos años.
  */
-export const money = (prefix: string) => ({
-  [`${prefix}AmountCents`]: bigint({ mode: 'bigint' }).notNull(),
-  [`${prefix}Currency`]: char({ length: 3 }).notNull(),
-  [`${prefix}FxRate`]: numeric({ precision: 20, scale: 10 }).notNull().default('1'),
-  [`${prefix}AmountBaseCents`]: bigint({ mode: 'bigint' }).notNull(),
-});
+const amountColumn = () => bigint({ mode: 'bigint' }).notNull();
+const currencyColumn = () => char({ length: 3 }).notNull();
+const fxRateColumn = () => numeric({ precision: 20, scale: 10 }).notNull().default('1');
+
+type MoneyColumns<P extends string> = Record<
+  `${P}AmountCents` | `${P}AmountBaseCents`,
+  ReturnType<typeof amountColumn>
+> &
+  Record<`${P}Currency`, ReturnType<typeof currencyColumn>> &
+  Record<`${P}FxRate`, ReturnType<typeof fxRateColumn>>;
+
+export function money<P extends string>(prefix: P): MoneyColumns<P> {
+  // El cast es necesario porque TS no infiere claves de template literal
+  // desde un objeto con claves computadas. Las cuatro columnas siempre
+  // van juntas: un monto suelto, sin su moneda y su cotización, no significa nada.
+  return {
+    [`${prefix}AmountCents`]: amountColumn(),
+    [`${prefix}Currency`]: currencyColumn(),
+    [`${prefix}FxRate`]: fxRateColumn(),
+    [`${prefix}AmountBaseCents`]: amountColumn(),
+  } as MoneyColumns<P>;
+}

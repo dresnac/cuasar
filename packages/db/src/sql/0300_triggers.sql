@@ -77,12 +77,15 @@ begin
     return;
   end if;
 
-  select coalesce(value_amount_base_cents, 0) into acq_cents
+  -- sum() y no una lectura directa: un SELECT INTO sin filas deja la
+  -- variable en NULL, y acá NULL no es cero, es "todavía no hay adquisición".
+  select coalesce(sum(value_amount_base_cents), 0) into acq_cents
   from vehicle_acquisitions where vehicle_id = v_id;
 
   select coalesce(sum(value_amount_base_cents), 0) into cost_cents
   from vehicle_costs where vehicle_id = v_id;
 
+  -- sale_cents SÍ puede quedar NULL a propósito: sin venta no hay margen.
   select value_amount_base_cents into sale_cents
   from vehicle_sales where vehicle_id = v_id;
 
