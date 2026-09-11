@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./ports": "./src/ports/index.ts"
+    "./ports": "./src/ports/index.ts",
+    "./services": "./src/services/index.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@cuasar/config": "workspace:*",
     "typescript": "^5.9.0",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "dotenv": "^16.4.7"
   }
 }

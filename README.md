@@ -11,7 +11,7 @@ El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— es
 | Fase | Qué incluye | Estado |
 |---|---|---|
 | 0 | Monorepo, esquema de datos, RLS, dominio puro | ✅ |
-| 1 | Núcleo de vehículos (CRUD, fotos, estados, timeline) | pendiente |
+| 1 | Núcleo de vehículos (CRUD, fotos, estados, timeline) | ✅ |
 | 2 | Contabilidad y dashboard | pendiente |
 | 3 | Sitio público multi-tenant | pendiente |
 | 4 | Agenda y leads | pendiente |
@@ -76,6 +76,19 @@ const stock = await dbAdmin.select().from(vehicles);
 formas distintas. Si alguno de esos tests empieza a pasar cuando debería fallar,
 hay una fuga de datos entre clientes. Corren en CI en cada PR.
 
+**Clerk resuelve identidad, no tenencia.** La agencia activa, el rol y los
+asientos salen de `memberships`, no de Clerk. Las políticas RLS y la matriz de
+permisos dependen de esa tabla, así que tiene que ser la única autoridad: dos
+fuentes de verdad sobre quién pertenece a qué es cómo se produce una fuga.
+
+**Dos trampas de Drizzle que ya nos costaron caro.** En un fragmento `sql` dentro
+de un `select`: (1) poné siempre `.as('nombre')`, y (2) escribí la columna externa
+calificada a mano (`"vehicles"."id"`), porque interpolar `${vehicles.id}` la
+renderiza como `"id"` a secas y adentro de un subselect eso resuelve a la tabla
+interna — la consulta no falla, contesta cero. Además, un fragmento crudo no
+lleva el tipo de la columna: un `bigint` vuelve como string. Para plata, seleccioná
+columnas reales y hacé la cuenta en TypeScript.
+
 **El timeline es append-only.** `vehicle_events` y `audit_log` no aceptan UPDATE
 ni DELETE del rol de aplicación. Un cambio de estado y su evento se escriben en
 la misma transacción: si el evento falla, el cambio no ocurrió.
@@ -96,7 +109,7 @@ parecen correctos y no lo son. Ver `packages/core/src/accounting.ts`.
 | Servicio | Para qué | Estado |
 |---|---|---|
 | Neon Postgres (gru1) | Base de datos | ✅ aprovisionado |
-| Clerk | Auth + Organizations = agencias | ✅ aprovisionado |
+| Clerk | Identidad (sign-in, cuentas) | ✅ aprovisionado |
 | Vercel Blob | Fotos de vehículos | ✅ aprovisionado |
 | Upstash Redis | Cache de agregados, rate limit | Fase 3 |
 | Edge Config | Mapa host → agencia | Fase 3 |

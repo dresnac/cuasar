@@ -10,16 +10,19 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/localizations": "^4.16.1",
+    "@clerk/nextjs": "^7.9.2",
+    "@cuasar/core": "workspace:*",
+    "@cuasar/db": "workspace:*",
+    "@cuasar/ui": "workspace:*",
+    "@vercel/blob": "^2.8.0",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "@cuasar/db": "workspace:*",
-    "@cuasar/core": "workspace:*",
-    "@cuasar/ui": "workspace:*",
-    "@clerk/nextjs": "^7.9.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@cuasar/config": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.15.0",
     "@types/react": "^19",
@@ -27,7 +30,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "@cuasar/config": "workspace:*"
+    "typescript": "^5"
   }
 }

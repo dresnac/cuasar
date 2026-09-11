@@ -24,6 +24,12 @@ export const agencies = pgTable(
     timezone: text().notNull().default('America/Argentina/Buenos_Aires'),
     /** Moneda en la que esta agencia lee sus márgenes. Ver `money()` en _shared.ts. */
     baseCurrency: char({ length: 3 }).notNull().default('USD'),
+    /**
+     * Organización de Clerk, cuando la instancia las tiene habilitadas.
+     * Nullable a propósito: la autoridad sobre membresías y roles es la
+     * tabla `memberships`, no Clerk. Ver la nota de §6 en DESIGN.md.
+     */
+    clerkOrgId: text().unique(),
     ...timestamps,
   },
   (t) => [index('agencies_status_idx').on(t.status)],

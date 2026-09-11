@@ -1,26 +1,120 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Cuasar — sistema visual del backoffice.
+ *
+ * La referencia no es un SaaS: es el patio y la ficha de vidriera. El azul
+ * viene de la banda superior de la patente Mercosur, el papel cálido de la
+ * carpeta de stock, y la rampa fresco→tibio→parado es la única escala de
+ * color con significado propio: cuántos días lleva un auto sin moverse.
+ */
+@theme {
+  --color-paper: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-ink: #16181d;
+  --color-ink-soft: #5b6068;
+  --color-ink-faint: #8d9299;
+  --color-line: #e4e1da;
+  --color-line-strong: #cfcbc1;
+
+  --color-signal: #1b4de4;
+  --color-signal-soft: #eef2fe;
+
+  --color-fresh: #2e7d5b;
+  --color-warm: #b8862b;
+  --color-stale: #b3402f;
+
+  --color-fresh-soft: #e8f3ed;
+  --color-warm-soft: #fbf2df;
+  --color-stale-soft: #fbeae7;
+
+  --font-display: var(--font-familjen), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 10px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    font-family: var(--font-sans);
+  }
+
+  /* Plata, kilómetros y días: siempre tabulares, para que las columnas
+     de una lista se lean como una columna y no como texto. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: white;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * La patente. Elemento firma: la chapa Mercosur reproducida a escala de
+ * interfaz. Es cómo un vendedor identifica una unidad cuando habla por
+ * teléfono, así que es el identificador que tiene que saltar a la vista.
+ */
+.plate {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 4px;
+  overflow: hidden;
+  background: white;
+  line-height: 1;
+  min-width: 5.5rem;
+}
+
+.plate-band {
+  background: var(--color-signal);
+  height: 5px;
+}
+
+.plate-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 3px 6px 4px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * La barra de antigüedad. Lo único que se permite gritar en esta interfaz.
+ * Un auto parado es capital muerto, y ese es el dato que la pantalla existe
+ * para poner adelante.
+ */
+.age-track {
+  height: 3px;
+  background: var(--color-line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.age-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .age-fill {
+    transition: none;
+  }
 }
