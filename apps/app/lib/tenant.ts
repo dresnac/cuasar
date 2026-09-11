@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { and, asc, dbAdmin, eq, schema, type Role, type TenantCtx } from '@cuasar/db';
 import { entitlementsFor, type AccessLevel } from '@cuasar/core';
+import { activateInvitations, linkPendingInvitations } from '@cuasar/core/services';
 
 const { users, memberships, agencies, subscriptions, plans } = schema;
 
@@ -27,15 +28,31 @@ export const currentLocalUser = cache(async () => {
     .where(eq(users.externalId, clerkId))
     .limit(1);
 
-  if (existing) return existing;
+  if (existing) {
+    // Alguien puede haber sido invitado a otra agencia después de su alta.
+    await activateInvitations(existing.id);
+    return existing;
+  }
 
   // Primer ingreso: espejamos el usuario de Clerk. No guardamos credenciales.
   const clerkUser = await currentUser();
+  const email = clerkUser?.primaryEmailAddress?.emailAddress;
+
+  // Si lo invitaron antes de que tuviera cuenta, la fila ya existe con un
+  // externalId provisorio: se enlaza con la identidad real en vez de crear
+  // un segundo usuario con el mismo mail.
+  if (email) {
+    const linkedId = await linkPendingInvitations(clerkId, email);
+    if (linkedId) {
+      const [linked] = await dbAdmin.select().from(users).where(eq(users.id, linkedId)).limit(1);
+      if (linked) return linked;
+    }
+  }
   const [created] = await dbAdmin
     .insert(users)
     .values({
       externalId: clerkId,
-      email: clerkUser?.primaryEmailAddress?.emailAddress ?? `${clerkId}@sin-email.local`,
+      email: email ?? `${clerkId}@sin-email.local`,
       name:
         [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') ||
         clerkUser?.username ||
@@ -44,7 +61,7 @@ export const currentLocalUser = cache(async () => {
     })
     .onConflictDoUpdate({
       target: users.externalId,
-      set: { email: clerkUser?.primaryEmailAddress?.emailAddress ?? 'sin-email' },
+      set: { email: email ?? 'sin-email' },
     })
     .returning();
 

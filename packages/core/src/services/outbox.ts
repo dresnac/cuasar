@@ -17,7 +17,11 @@ import { and, asc, dbAdmin, eq, lte, schema, sql, type Tx } from '@cuasar/db';
 
 const { outbox } = schema;
 
-export type OutboxTopic = 'lead.received' | 'appointment.scheduled' | 'appointment.reminder';
+export type OutboxTopic =
+  | 'lead.received'
+  | 'appointment.scheduled'
+  | 'appointment.reminder'
+  | 'member.invited';
 
 export type OutboxMessage = {
   id: string;

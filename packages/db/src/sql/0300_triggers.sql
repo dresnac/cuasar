@@ -139,14 +139,14 @@ begin
     days_in_stock           = excluded.days_in_stock,
     recomputed_at           = now();
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 create or replace function financials_trigger() returns trigger as $$
 begin
   perform recompute_vehicle_financials(coalesce(new.vehicle_id, old.vehicle_id));
   return coalesce(new, old);
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 do $$
 declare t text;
@@ -173,7 +173,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 drop trigger if exists vehicles_recompute_financials on vehicles;
 create trigger vehicles_recompute_financials after insert or update on vehicles

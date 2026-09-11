@@ -15,7 +15,8 @@
     "studio": "drizzle-kit studio",
     "seed": "tsx src/seed.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "make-admin": "tsx src/make-admin.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

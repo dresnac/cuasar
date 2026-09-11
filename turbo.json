@@ -23,7 +23,8 @@
     "DEV_AGENCY_SLUG",
     "RESEND_API_KEY",
     "EMAIL_FROM",
-    "CRON_SECRET"
+    "CRON_SECRET",
+    "STRIPE_PRICE_ID"
   ],
   "tasks": {
     "build": {

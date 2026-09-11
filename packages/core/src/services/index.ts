@@ -7,3 +7,6 @@ export * from './public';
 export * from './leads';
 export * from './appointments';
 export * from './outbox';
+export * from './members';
+export * from './billing';
+export * from './platform';

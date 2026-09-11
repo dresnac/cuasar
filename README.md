@@ -15,7 +15,7 @@ El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— es
 | 2 | Contabilidad y dashboard | ✅ |
 | 3 | Sitio público multi-tenant | ✅ |
 | 4 | Agenda y leads | ✅ |
-| 5 | Suscripciones (Stripe → MercadoPago) y panel de plataforma | pendiente |
+| 5 | Suscripciones y panel de plataforma | ✅ (falta conectar los proveedores) |
 | 6 | Endurecimiento y performance medida | pendiente |
 
 ## Estructura
@@ -53,6 +53,7 @@ pnpm dev
 | `pnpm db:migrate` | Aplica migraciones, roles, políticas RLS y triggers |
 | `pnpm db:seed` | Datos de prueba con forma realista |
 | `pnpm db:studio` | Drizzle Studio |
+| `pnpm db:make-admin <email>` | Da de alta un moderador de plataforma |
 
 ## Lo que hay que entender antes de escribir un query
 
@@ -100,6 +101,14 @@ Cada agencia tiene su propia moneda base; `amount_base_cents` está expresado en
 la base *de esa agencia*, así que ningún agregado cruza agencias sin una
 conversión explícita.
 
+**`subscriptions` es una proyección, nunca la fuente de verdad.** La escriben
+los webhooks; ninguna agencia puede tocarla (el rol `app_tenant` tiene revocado
+el insert y el update). Todo evento de cobro se reserva por
+`(provider, provider_event_id)` antes de aplicarse, y se distingue un reintento
+de algo ya procesado de un reintento de algo que se registró pero nunca se
+llegó a aplicar: descartar el segundo dejaría la suscripción desincronizada
+para siempre.
+
 **Nada sale al mundo desde adentro de un request.** Un mail, una publicación
 en MercadoLibre o un evento de calendario se encolan en `outbox` dentro de la
 misma transacción que el cambio, y un worker los drena
@@ -139,5 +148,7 @@ parecen correctos y no lo son. Ver `packages/core/src/accounting.ts`.
 | Clerk | Identidad (sign-in, cuentas) | ✅ aprovisionado |
 | Vercel Blob | Fotos de vehículos | ✅ aprovisionado |
 | Resend | Mails de aviso | pendiente: necesita un dominio verificado |
+| Stripe | Cobro con tarjeta | pendiente: hay que aceptar los términos en el navegador |
+| MercadoPago | Cobro local en ARS | pendiente: credenciales de la cuenta |
 | Upstash Redis | Rate limit distribuido | cuando haga falta |
 | Stripe / MercadoPago | Suscripciones | Fase 5 |

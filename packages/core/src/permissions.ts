@@ -1,5 +1,7 @@
 import type { Role } from '@cuasar/db';
 
+export type { Role };
+
 /**
  * Qué puede hacer cada rol DENTRO de su agencia.
  *

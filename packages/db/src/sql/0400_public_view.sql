@@ -8,6 +8,20 @@
  * No se proyectan precio de compra, costos, margen ni piso de negociación:
  * esos datos no salen del backoffice ni por accidente.
  */
+
+/*
+ * Las funciones de proyección van con SECURITY DEFINER y `search_path` fijo.
+ *
+ * Mantener `vehicle_public_view` y `vehicle_financials` es una invariante
+ * interna: quien cambió la fila de origen ya tenía permiso para cambiarla, y
+ * no tiene por qué tener además permiso sobre las tablas derivadas. Sin esto,
+ * un moderador suspendiendo una agencia —que puede escribir `agencies` pero
+ * no el catálogo— hacía fallar el trigger.
+ *
+ * El `search_path` fijo es obligatorio en una función DEFINER: sin él, quien
+ * la invoca puede anteponer un esquema propio y hacer que "vehicles" apunte
+ * a una tabla suya.
+ */
 create or replace function sync_vehicle_public_view(v_id uuid) returns void as $$
 declare
   v      record;
@@ -84,14 +98,14 @@ begin
     published_at   = excluded.published_at,
     updated_at     = now();
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 create or replace function vehicles_sync_public_view() returns trigger as $$
 begin
   perform sync_vehicle_public_view(coalesce(new.id, old.id));
   return coalesce(new, old);
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 drop trigger if exists vehicles_sync_public_view on vehicles;
 create trigger vehicles_sync_public_view after insert or update or delete on vehicles
@@ -102,7 +116,7 @@ begin
   perform sync_vehicle_public_view(coalesce(new.vehicle_id, old.vehicle_id));
   return coalesce(new, old);
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 drop trigger if exists vehicle_images_sync_public_view on vehicle_images;
 create trigger vehicle_images_sync_public_view after insert or update or delete on vehicle_images
@@ -116,7 +130,7 @@ begin
   end if;
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 drop trigger if exists agencies_sync_public_view on agencies;
 create trigger agencies_sync_public_view after update on agencies
