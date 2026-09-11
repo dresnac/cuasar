@@ -301,13 +301,32 @@ Nada del dominio importa un SDK de tercero: el dominio escribe en `outbox`, un w
 | ORM | **Drizzle** | SQL explícito y tipado; no esconde el plan de ejecución. Con foco en performance, no queremos un ORM que genere N+1 sin que se note. |
 | Imágenes | **Vercel Blob** + `next/image` | Uploads directos desde el browser (no pasan por la función), AVIF/WebP automático, CDN. La DB guarda solo metadata. |
 | Caché | **Upstash Redis** + ISR/`cacheTag` + Edge Config | Redis para agregados y rate-limit; Edge Config para el mapa host→tenant (lectura sin latencia de red). |
-| Auth | **Clerk** (Marketplace) | Organizations mapea 1:1 a agencia, con membresías, roles e invitaciones ya resueltos — que es exactamente el requisito multi-usuario. Su JWT lleva `org_id`, que usamos para setear el contexto RLS. |
+| Auth | **Clerk** (Marketplace), solo identidad | Clerk resuelve sign-in, cuentas y recuperación de contraseña. **La tenencia no**: la agencia activa, el rol y los asientos salen de `memberships`. Ver la nota de abajo. |
 | Pagos | **Stripe** (Marketplace) + **MercadoPago**, elegido por la agencia | Stripe resuelve tarjeta internacional, portal y dunning; MercadoPago (preapproval) es imprescindible para la agencia argentina sin tarjeta habilitada en USD. Ambos detrás de un `BillingPort` único (§5). |
 | Moneda | **Base por agencia** (`base_currency`, USD por defecto) | Una agencia que opera en USD y otra que opera en pesos necesitan márgenes en su propia unidad. El `fx_rate` congelado por transacción hace que el histórico no se mueva. |
 | UI | **Tailwind + shadcn/ui** | Componentes propios en el repo, sin dependencia de versión de una librería cerrada; el sitio público necesita theming por agencia. |
 | Validación | **Zod** compartido cliente/servidor | Un solo esquema por entrada. |
 | Testing | **Vitest** (dominio y contabilidad) + **Playwright** (flujos críticos) | La lógica de plata y transiciones se testea unitariamente; el resto, end-to-end sobre los 5 flujos que no pueden romperse. |
 | Observabilidad | Vercel Analytics + Speed Insights + Sentry | El requisito de velocidad necesita medición, no intuición. |
+
+### Por qué Clerk no maneja las agencias
+
+El diseño original mapeaba una Organization de Clerk a una agencia. Al
+implementarlo apareció un problema que lo invalida: los roles de este producto
+(`OWNER`/`ADMIN`/`SALES`/`VIEWER`) no existen en Clerk sin el módulo B2B pago, y
+las políticas RLS y la matriz de permisos ya dependen de `memberships`. Mapear
+las agencias a Organizations dejaba **dos fuentes de verdad sobre quién
+pertenece a qué**, que es exactamente la forma en que se produce una fuga de
+datos entre clientes.
+
+Decisión: Clerk se queda con la identidad; `memberships` es la autoridad sobre
+tenencia y permisos. `agencies.clerk_org_id` existe y es nullable, así que si más
+adelante conviene habilitar Organizations —para invitaciones por mail y SSO
+empresarial— el mapeo entra sin migración de datos.
+
+Lo que esto cuesta: hay que construir el selector de agencia y el flujo de
+invitaciones. El selector ya está hecho; las invitaciones caen en la Fase 5,
+junto con los asientos, que es donde tienen que estar de todos modos.
 
 ### Autorización
 Dos capas, sin excepción:
