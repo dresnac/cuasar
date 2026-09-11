@@ -5,19 +5,23 @@ import { usePathname } from 'next/navigation';
 import { cx } from './ui';
 
 const SECTIONS = [
-  { href: '/vehiculos', label: 'Vehículos', ready: true },
-  { href: '/contabilidad', label: 'Contabilidad', ready: false },
-  { href: '/agenda', label: 'Agenda', ready: false },
-  { href: '/leads', label: 'Consultas', ready: false },
-  { href: '/sitio', label: 'Sitio público', ready: false },
+  { href: '/vehiculos', label: 'Vehículos', ready: true, finance: false },
+  { href: '/contabilidad', label: 'Contabilidad', ready: true, finance: true },
+  { href: '/agenda', label: 'Agenda', ready: false, finance: false },
+  { href: '/leads', label: 'Consultas', ready: false, finance: false },
+  { href: '/sitio', label: 'Sitio público', ready: false, finance: false },
 ] as const;
 
-export function Nav() {
+export function Nav({ showFinance }: { showFinance: boolean }) {
   const pathname = usePathname();
+
+  // Una sección que el rol no puede abrir no se muestra apagada: se saca.
+  // Un link que siempre rebota enseña a desconfiar de la navegación.
+  const sections = SECTIONS.filter((s) => !s.finance || showFinance);
 
   return (
     <nav aria-label="Secciones" className="flex flex-col gap-0.5">
-      {SECTIONS.map((s) =>
+      {sections.map((s) =>
         s.ready ? (
           <Link
             key={s.href}

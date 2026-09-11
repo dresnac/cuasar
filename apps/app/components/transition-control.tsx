@@ -17,7 +17,18 @@ export function TransitionControl({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const options = allowedTransitions(status);
+  // VENDIDO no se ofrece acá: marcar vendido y registrar a cuánto son el
+  // mismo acto, y sale por el formulario de venta. Un vehículo en VENDIDO
+  // sin fila en `vehicle_sales` sería un agujero en la contabilidad.
+  const options = allowedTransitions(status).filter((to) => to !== 'VENDIDO');
+
+  if (options.length === 0 && status !== 'VENDIDO') {
+    return (
+      <p className="text-[12px] text-ink-faint">
+        La venta se cierra desde el panel de venta, con el monto de la operación.
+      </p>
+    );
+  }
 
   if (options.length === 0) {
     return (
@@ -63,8 +74,6 @@ function verbFor(to: VehicleStatus) {
       return 'Publicar';
     case 'RESERVADO':
       return 'Marcar reservado';
-    case 'VENDIDO':
-      return 'Marcar vendido';
     case 'PAUSADO':
       return 'Pausar';
     case 'DEVUELTO':

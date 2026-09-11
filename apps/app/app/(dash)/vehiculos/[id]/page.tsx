@@ -1,18 +1,20 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { canSeeFinancials, type VehicleStatus } from '@cuasar/core';
-import { getVehicle, listTimeline } from '@cuasar/core/services';
+import { getSale, getVehicle, listCosts, listTimeline } from '@cuasar/core/services';
 import { AgeBar } from '@/components/age-bar';
+import { CostsCard } from '@/components/costs-card';
 import { ImageUploader } from '@/components/image-uploader';
 import { NoteForm } from '@/components/note-form';
 import { Plate } from '@/components/plate';
+import { SaleCard } from '@/components/sale-card';
 import { StatusChip } from '@/components/status-chip';
 import { Timeline } from '@/components/timeline';
 import { TransitionControl } from '@/components/transition-control';
 import { Card, SectionTitle } from '@/components/ui';
 import { OWNERSHIP_LABEL } from '@/components/vehicle-meta';
 import { dateLong, km as fmtKm, money, relativeDays } from '@/lib/format';
-import { requireSession } from '@/lib/tenant';
+import { agencyTeam, requireSession } from '@/lib/tenant';
 
 export default async function VehiclePage({ params }: PageProps<'/vehiculos/[id]'>) {
   const { id } = await params;
@@ -21,8 +23,14 @@ export default async function VehiclePage({ params }: PageProps<'/vehiculos/[id]
   const vehicle = await getVehicle(session.ctx, id);
   if (!vehicle) notFound();
 
-  const timeline = await listTimeline(session.ctx, id);
   const showMoney = canSeeFinancials(session.ctx.role);
+
+  const [timeline, costs, sale, team] = await Promise.all([
+    listTimeline(session.ctx, id),
+    listCosts(session.ctx, id),
+    getSale(session.ctx, id),
+    showMoney ? agencyTeam(session.agency.agencyId) : Promise.resolve([]),
+  ]);
   const editable = session.access === 'FULL';
   const base = session.agency.baseCurrency;
   const sold = vehicle.status === 'VENDIDO';
@@ -151,6 +159,35 @@ export default async function VehiclePage({ params }: PageProps<'/vehiculos/[id]
                 <Detail label="Desde" value={vehicle.consignment.contractStartsAt} />
                 <Detail label="Hasta" value={vehicle.consignment.contractEndsAt ?? 'sin plazo'} />
               </dl>
+            </Card>
+          )}
+
+          {showMoney && (
+            <Card className="p-4">
+              <SectionTitle eyebrow="Preparación">Gastos de la unidad</SectionTitle>
+              <CostsCard
+                vehicleId={vehicle.id}
+                costs={costs}
+                baseCurrency={base}
+                editable={editable}
+              />
+            </Card>
+          )}
+
+          {showMoney && (
+            <Card className="p-4">
+              <SectionTitle eyebrow={sold ? 'Operación' : 'Venta'}>
+                {sold ? 'Cómo se cerró' : 'Cerrar la operación'}
+              </SectionTitle>
+              <SaleCard
+                vehicleId={vehicle.id}
+                sale={sale}
+                sellable={vehicle.status === 'PUBLICADO' || vehicle.status === 'RESERVADO'}
+                editable={editable}
+                baseCurrency={base}
+                floorBaseCents={vehicle.consignment?.agreedFloorAmountBaseCents ?? null}
+                team={team}
+              />
             </Card>
           )}
 

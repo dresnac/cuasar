@@ -150,3 +150,15 @@ export async function switchAgency(agencyId: string) {
     maxAge: 60 * 60 * 24 * 365,
   });
 }
+
+/** El equipo de la agencia activa, para asignar ventas y turnos. */
+export const agencyTeam = cache(async (agencyId: string) => {
+  const rows = await dbAdmin
+    .select({ id: users.id, name: users.name, email: users.email })
+    .from(memberships)
+    .innerJoin(users, eq(users.id, memberships.userId))
+    .where(and(eq(memberships.agencyId, agencyId), eq(memberships.status, 'ACTIVE')))
+    .orderBy(asc(users.name));
+
+  return rows.map((r) => ({ id: r.id, name: r.name ?? r.email }));
+});

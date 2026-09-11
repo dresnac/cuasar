@@ -8,6 +8,9 @@ import {
   addNote,
   attachImages,
   createVehicle,
+  registerCost,
+  registerSale,
+  removeCost,
   removeImage,
   setCover,
   transitionVehicle,
@@ -26,7 +29,14 @@ export type FormState = { error?: string; issues?: Record<string, string> };
  * que pueda mandar `amountBaseCents` es un cliente que puede mentir sobre
  * el margen.
  */
-function readMoney(fd: FormData, prefix: string, baseCurrency: Currency) {
+const FX_MISSING = 'SIN_COTIZACION' as const;
+
+type MoneyRead =
+  | { amountCents: bigint; currency: Currency; fxRate: string; amountBaseCents: bigint }
+  | null
+  | typeof FX_MISSING;
+
+function readMoney(fd: FormData, prefix: string, baseCurrency: Currency): MoneyRead {
   const raw = String(fd.get(`${prefix}Amount`) ?? '')
     .replace(/[^\d.,-]/g, '')
     .replace(',', '.');
@@ -36,12 +46,17 @@ function readMoney(fd: FormData, prefix: string, baseCurrency: Currency) {
   // Una operación se carga en una moneda, con una cotización: el auto, lo
   // que se pagó por él y el piso acordado se hablan en la misma unidad.
   const currency = (String(fd.get('currency') ?? baseCurrency) || baseCurrency) as Currency;
-  const fxRate = String(fd.get('fxRate') ?? '').trim() || '1';
+  const fxRate = String(fd.get('fxRate') ?? '').replace(',', '.').trim();
+
+  // Sin cotización no se convierte "por las dudas": tomar 1 como default
+  // metería un monto en pesos en una contabilidad en dólares y el error
+  // recién se vería meses después, en un margen que no cierra.
+  if (currency !== baseCurrency && !(Number(fxRate) > 0)) return FX_MISSING;
 
   const converted = toBase(
     { amountCents: BigInt(Math.round(units * 100)), currency },
     baseCurrency,
-    fxRate,
+    fxRate || '1',
   );
 
   return {
@@ -51,6 +66,10 @@ function readMoney(fd: FormData, prefix: string, baseCurrency: Currency) {
     amountBaseCents: converted.amountBaseCents,
   };
 }
+
+const FX_ERROR: FormState = {
+  error: 'Falta la cotización del día para convertir a la moneda de la agencia.',
+};
 
 const text = (fd: FormData, key: string) => {
   const value = String(fd.get(key) ?? '').trim();
@@ -63,11 +82,14 @@ export async function createVehicleAction(_prev: FormState, fd: FormData): Promi
 
   const base = session.agency.baseCurrency as Currency;
   const listPrice = readMoney(fd, 'listPrice', base);
+  if (listPrice === FX_MISSING) return FX_ERROR;
   if (!listPrice) return { error: 'Falta el precio de venta.' };
 
   const ownership = String(fd.get('ownership')) === 'CONSIGNMENT' ? 'CONSIGNMENT' : 'OWNED';
   const acquisition = readMoney(fd, 'acquisition', base);
   const agreedFloor = readMoney(fd, 'agreedFloor', base);
+
+  if (acquisition === FX_MISSING || agreedFloor === FX_MISSING) return FX_ERROR;
 
   if (ownership === 'OWNED' && !acquisition) {
     return { error: 'Un vehículo propio necesita el precio al que lo compraste.' };
@@ -130,6 +152,7 @@ export async function updateVehicleAction(
 
   const base = session.agency.baseCurrency as Currency;
   const listPrice = readMoney(fd, 'listPrice', base);
+  if (listPrice === FX_MISSING) return FX_ERROR;
 
   const result = await updateVehicle(session.ctx, vehicleId, {
     brand: text(fd, 'brand') ?? undefined,
@@ -223,5 +246,82 @@ export async function setCoverAction(vehicleId: string, imageId: string): Promis
 
   revalidatePath(`/vehiculos/${vehicleId}`);
   revalidatePath('/vehiculos');
+  return {};
+}
+
+// ---------------------------------------------------------------------------
+// Contabilidad de la unidad
+// ---------------------------------------------------------------------------
+
+export async function registerCostAction(
+  vehicleId: string,
+  _prev: FormState,
+  fd: FormData,
+): Promise<FormState> {
+  const session = await requireSession();
+  if (session.access !== 'FULL') return { error: 'La cuenta está en modo lectura.' };
+
+  const base = session.agency.baseCurrency as Currency;
+  const value = readMoney(fd, 'cost', base);
+  if (value === FX_MISSING) return FX_ERROR;
+  if (!value) return { error: 'Poné el monto del gasto.' };
+
+  const result = await registerCost(session.ctx, vehicleId, {
+    category: fd.get('category'),
+    description: text(fd, 'description'),
+    supplier: text(fd, 'supplier'),
+    invoiceRef: text(fd, 'invoiceRef'),
+    occurredAt: text(fd, 'occurredAt') ?? new Date(),
+    value,
+  });
+
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath(`/vehiculos/${vehicleId}`);
+  revalidatePath('/vehiculos');
+  revalidatePath('/contabilidad');
+  return {};
+}
+
+export async function removeCostAction(vehicleId: string, costId: string): Promise<FormState> {
+  const session = await requireSession();
+  if (session.access !== 'FULL') return { error: 'La cuenta está en modo lectura.' };
+
+  const result = await removeCost(session.ctx, vehicleId, costId);
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath(`/vehiculos/${vehicleId}`);
+  revalidatePath('/contabilidad');
+  return {};
+}
+
+export async function registerSaleAction(
+  vehicleId: string,
+  _prev: FormState,
+  fd: FormData,
+): Promise<FormState> {
+  const session = await requireSession();
+  if (session.access !== 'FULL') return { error: 'La cuenta está en modo lectura.' };
+
+  const base = session.agency.baseCurrency as Currency;
+  const value = readMoney(fd, 'sale', base);
+  if (value === FX_MISSING) return FX_ERROR;
+  if (!value) return { error: 'Poné a cuánto se vendió.' };
+
+  const result = await registerSale(session.ctx, vehicleId, {
+    value,
+    buyerName: text(fd, 'buyerName'),
+    buyerDoc: text(fd, 'buyerDoc'),
+    buyerPhone: text(fd, 'buyerPhone'),
+    paymentMethod: text(fd, 'paymentMethod'),
+    salespersonUserId: text(fd, 'salespersonUserId'),
+    soldAt: text(fd, 'soldAt') ?? new Date(),
+  });
+
+  if (!result.ok) return { error: result.error.message };
+
+  revalidatePath(`/vehiculos/${vehicleId}`);
+  revalidatePath('/vehiculos');
+  revalidatePath('/contabilidad');
   return {};
 }

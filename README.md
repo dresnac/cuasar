@@ -12,7 +12,7 @@ El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— es
 |---|---|---|
 | 0 | Monorepo, esquema de datos, RLS, dominio puro | ✅ |
 | 1 | Núcleo de vehículos (CRUD, fotos, estados, timeline) | ✅ |
-| 2 | Contabilidad y dashboard | pendiente |
+| 2 | Contabilidad y dashboard | ✅ |
 | 3 | Sitio público multi-tenant | pendiente |
 | 4 | Agenda y leads | pendiente |
 | 5 | Suscripciones (Stripe → MercadoPago) y panel de plataforma | pendiente |
@@ -98,6 +98,16 @@ cotización congelada al momento del registro (`packages/core/src/money.ts`).
 Cada agencia tiene su propia moneda base; `amount_base_cents` está expresado en
 la base *de esa agencia*, así que ningún agregado cruza agencias sin una
 conversión explícita.
+
+**Vender y registrar la venta son el mismo acto.** `registerSale` inserta la fila
+en `vehicle_sales` y mueve el estado a `VENDIDO` en una sola transacción, y la UI
+no ofrece `VENDIDO` como transición suelta: un vehículo vendido sin fila de venta
+sería un agujero silencioso en la contabilidad.
+
+**Nunca convertir moneda sin cotización.** Si la operación viene en una moneda
+distinta a la base de la agencia y no hay `fxRate`, la acción falla. Tomar 1 por
+defecto metería un monto en pesos en una contabilidad en dólares y el error
+recién aparecería meses después, en un margen que no cierra.
 
 **Propio y consignación no se calculan igual.** En un auto propio el resultado es
 venta − compra − gastos. En consignación el capital es de un tercero: el

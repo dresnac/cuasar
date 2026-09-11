@@ -7,6 +7,10 @@
  * viene de la banda superior de la patente Mercosur, el papel cálido de la
  * carpeta de stock, y la rampa fresco→tibio→parado es la única escala de
  * color con significado propio: cuántos días lleva un auto sin moverse.
+ *
+ * Los cuatro colores de datos están validados para daltonismo: el peor par
+ * adyacente da ΔE 10.4 en protanopía. El verde salió de #2e7d5b porque su
+ * croma quedaba por debajo del piso y se leía gris.
  */
 @theme {
   --color-paper: #f7f6f3;
@@ -20,11 +24,11 @@
   --color-signal: #1b4de4;
   --color-signal-soft: #eef2fe;
 
-  --color-fresh: #2e7d5b;
+  --color-fresh: #127a4e;
   --color-warm: #b8862b;
   --color-stale: #b3402f;
 
-  --color-fresh-soft: #e8f3ed;
+  --color-fresh-soft: #e6f3ec;
   --color-warm-soft: #fbf2df;
   --color-stale-soft: #fbeae7;
 

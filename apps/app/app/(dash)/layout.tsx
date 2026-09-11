@@ -1,4 +1,5 @@
 import { UserButton } from '@clerk/nextjs';
+import { canSeeFinancials } from '@cuasar/core';
 import { AgencySwitcher } from '@/components/agency-switcher';
 import { Nav } from '@/components/nav';
 import { requireSession } from '@/lib/tenant';
@@ -11,7 +12,7 @@ export default async function DashboardLayout({ children }: LayoutProps<'/'>) {
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col justify-between border-r border-line bg-surface px-3 py-4 lg:flex">
         <div className="flex flex-col gap-5">
           <AgencySwitcher active={session.agency} memberships={session.memberships} />
-          <Nav />
+          <Nav showFinance={canSeeFinancials(session.ctx.role)} />
         </div>
 
         <div className="flex items-center gap-2.5 border-t border-line px-2 pt-3">
