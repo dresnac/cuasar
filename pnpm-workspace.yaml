@@ -2,12 +2,14 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Qué dependencias pueden correr scripts de instalación.
+#
+# pnpm 11 falla el install si hay alguna sin decidir, y en el build de Vercel
+# eso es un error fatal: el archivo había quedado con los valores de ejemplo que
+# escribe `pnpm approve-builds` y el deploy no pasaba de `pnpm install`.
+#
+# esbuild lo necesitan tsx, vitest y drizzle-kit para bajar su binario;
+# unrs-resolver lo usa eslint.
 allowBuilds:
-  esbuild: set this to true or false
-  unrs-resolver: set this to true or false
-
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
-  - "@tailwindcss/oxide"
-  - unrs-resolver
+  esbuild: true
+  unrs-resolver: true
