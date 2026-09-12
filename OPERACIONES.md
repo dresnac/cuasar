@@ -169,7 +169,18 @@ curl -H "authorization: Bearer $CRON_SECRET" \
   https://app.cuasar.app/api/cron/outbox-drain
 ```
 
-Un cron de Vercel la drena cada cinco minutos (`apps/app/vercel.json`).
+Se drena por dos vías:
+
+- **Después de cada consulta del sitio público**, con `after()`: corre fuera del
+  camino de la respuesta, así que si el proveedor de mail está caído la persona
+  igual ve su "consulta enviada".
+- **Un cron diario** a las 9 (`apps/app/vercel.json`), como red para lo que
+  quedó reintentando.
+
+**Por qué diario y no cada cinco minutos:** el plan Hobby de Vercel solo
+permite crons diarios, y un `*/5 * * * *` hace fallar el deploy entero con
+`Hobby accounts are limited to daily cron jobs`. En Pro conviene bajarlo a
+cinco minutos y el `after()` deja de ser el camino principal.
 
 - Reintenta con espera creciente: 1, 2, 4, 8… minutos, hasta seis intentos.
 - Después se rinde: la fila queda en `FAILED` y aparece en el panel de

@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { createPublicLead } from '@cuasar/core/services';
 import { clientIp, rateLimit, RULES } from '@cuasar/integrations';
 import { currentAgency } from '@/lib/agency';
+import { drainAfterResponse } from '@/lib/notify';
 
 export type LeadState = { ok?: true; error?: string };
 
@@ -46,5 +47,7 @@ export async function sendLeadAction(
   });
 
   if (!result.ok) return { error: result.error.message };
+
+  drainAfterResponse();
   return { ok: true };
 }
