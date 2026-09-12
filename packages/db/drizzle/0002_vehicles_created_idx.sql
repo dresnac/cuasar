@@ -1,0 +1,1 @@
+CREATE INDEX "vehicles_agency_created_idx" ON "vehicles" USING btree ("agency_id","created_at" DESC NULLS LAST,"id" DESC NULLS LAST);

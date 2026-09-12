@@ -40,3 +40,15 @@ sobre su propia ventana de fechas, para que dos corridas seguidas den lo mismo.
 - `packages/core/tests/` — dominio puro, sin DB. Rápidos, corren siempre.
 - `packages/db/tests/isolation.test.ts` — RLS y privilegios contra una base real.
   Necesita `pnpm db:seed` antes.
+
+Los tests de integración tienen `testTimeout` en 20 s. No es porque sean lentos:
+cada operación de dominio son diez o quince viajes a una base remota de ~70 ms
+cada uno. Si uno falla por timeout, mirá la latencia de la red antes de tocar el
+código.
+
+## Performance
+
+`pnpm db:perf --bench` mide las consultas calientes con volumen real y falla si
+alguna se pasa de presupuesto o cae a scan secuencial. Corrélo después de tocar
+un índice, agregar un join o cambiar el orden de un listado. El detalle está en
+`OPERACIONES.md`.

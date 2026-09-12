@@ -15,7 +15,8 @@
     "db:migrate": "pnpm --filter @cuasar/db migrate",
     "db:seed": "pnpm --filter @cuasar/db seed",
     "db:studio": "pnpm --filter @cuasar/db studio",
-    "db:make-admin": "pnpm --filter @cuasar/db make-admin"
+    "db:make-admin": "pnpm --filter @cuasar/db make-admin",
+    "db:perf": "pnpm --filter @cuasar/db perf"
   },
   "devDependencies": {
     "turbo": "^2.10.12",

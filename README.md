@@ -5,6 +5,7 @@ contabilidad por unidad, agenda, sitio público por agencia y panel de plataform
 
 El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— está en
 [`DESIGN.md`](./DESIGN.md). **Leerlo antes de tocar código.**
+Cómo operarlo, qué está verificado y qué no, en [`OPERACIONES.md`](./OPERACIONES.md).
 
 ## Estado
 
@@ -16,7 +17,7 @@ El diseño completo —arquitectura, modelo de datos, decisiones y riesgos— es
 | 3 | Sitio público multi-tenant | ✅ |
 | 4 | Agenda y leads | ✅ |
 | 5 | Suscripciones y panel de plataforma | ✅ (falta conectar los proveedores) |
-| 6 | Endurecimiento y performance medida | pendiente |
+| 6 | Endurecimiento y performance medida | ✅ (ver `OPERACIONES.md`) |
 
 ## Estructura
 
@@ -54,6 +55,7 @@ pnpm dev
 | `pnpm db:seed` | Datos de prueba con forma realista |
 | `pnpm db:studio` | Drizzle Studio |
 | `pnpm db:make-admin <email>` | Da de alta un moderador de plataforma |
+| `pnpm db:perf --bench` | Presupuesto de performance con volumen real |
 
 ## Lo que hay que entender antes de escribir un query
 
@@ -150,5 +152,5 @@ parecen correctos y no lo son. Ver `packages/core/src/accounting.ts`.
 | Resend | Mails de aviso | pendiente: necesita un dominio verificado |
 | Stripe | Cobro con tarjeta | pendiente: hay que aceptar los términos en el navegador |
 | MercadoPago | Cobro local en ARS | pendiente: credenciales de la cuenta |
-| Upstash Redis | Rate limit distribuido | cuando haga falta |
+| Upstash Redis | Tope de pedidos global | pendiente: términos del marketplace |
 | Stripe / MercadoPago | Suscripciones | Fase 5 |

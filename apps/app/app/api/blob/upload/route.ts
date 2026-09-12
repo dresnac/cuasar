@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 import { vehicleBelongsToAgency } from '@cuasar/core/services';
+import { rateLimit, RULES } from '@cuasar/integrations';
 import { requireSession } from '@/lib/tenant';
 
 /**
@@ -27,6 +28,13 @@ export async function POST(request: Request) {
 
         const belongs = await vehicleBelongsToAgency(session.ctx, vehicleId);
         if (!belongs) throw new Error('Ese vehículo no es de esta agencia.');
+
+        // Tope por agencia: una sesión con el token puede pedir tantos como
+        // quiera, y cada archivo subido se factura.
+        const allowed = await rateLimit(`upload:${session.ctx.agencyId}`, RULES.upload);
+        if (!allowed.ok) {
+          throw new Error('Demasiadas fotos en la última hora. Probá de nuevo más tarde.');
+        }
 
         // La ruta lleva la agencia adelante: hace el storage auditable y
         // permite borrar todo lo de una cuenta dada de baja con un prefijo.

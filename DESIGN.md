@@ -409,7 +409,9 @@ Segundo adapter sobre el mismo puerto, elección de proveedor en el alta de la a
 Moderadores, métricas globales (consolidadas a USD y declaradas como tales), alta/baja y suspensión de agencias, audit log e impersonación.
 
 **Fase 6 — Endurecimiento**
-Presupuesto de performance medido (objetivo: catálogo público LCP < 1.5s, backoffice TTI < 2s), rate limiting, BotID en formularios, backups y restore probado, Sentry, documentación de operación.
+Presupuesto de performance de las consultas calientes, medido con volumen real y corrible (`pnpm db:perf --bench`) · topes de pedidos en capas sobre el formulario público · BotID · documentación de operación con lo verificado separado de lo que no.
+
+Lo que quedó afuera y por qué: **LCP y TTI** necesitan un despliegue y una corrida de Lighthouse, y la conexión con GitHub está pendiente. **El restore** está documentado pero sin probar: el `pg_dump` local es v14 contra un servidor v18. **Sentry** no se cableó. Todo eso está listado al final de `OPERACIONES.md`.
 
 ---
 

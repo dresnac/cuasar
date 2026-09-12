@@ -16,7 +16,8 @@
     "seed": "tsx src/seed.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "make-admin": "tsx src/make-admin.ts"
+    "make-admin": "tsx src/make-admin.ts",
+    "perf": "tsx src/perf.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

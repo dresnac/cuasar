@@ -1,5 +1,6 @@
 import { revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
+import { clientIp, rateLimit, RULES } from '@cuasar/integrations';
 import { agencyTag } from '@/lib/agency';
 import { catalogTag } from '@/lib/catalog';
 
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
 
   if (request.headers.get('x-cuasar-secret') !== secret) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  // Con el secreto correcto igual hay tope: una invalidación en loop haría
+  // que cada request al catálogo bloquee esperando una revalidación nueva.
+  const allowed = await rateLimit(`revalidate:${clientIp(request.headers)}`, RULES.revalidate);
+  if (!allowed.ok) {
+    return NextResponse.json({ error: 'Demasiadas invalidaciones' }, { status: 429 });
   }
 
   const body = (await request.json().catch(() => null)) as { agencyId?: string } | null;

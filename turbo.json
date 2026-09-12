@@ -24,7 +24,11 @@
     "RESEND_API_KEY",
     "EMAIL_FROM",
     "CRON_SECRET",
-    "STRIPE_PRICE_ID"
+    "STRIPE_PRICE_ID",
+    "KV_REST_API_URL",
+    "KV_REST_API_TOKEN",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN"
   ],
   "tasks": {
     "build": {

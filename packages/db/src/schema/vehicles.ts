@@ -71,6 +71,10 @@ export const vehicles = pgTable(
     unique('vehicles_agency_plate_uq').on(t.agencyId, t.licensePlate),
     unique('vehicles_agency_slug_uq').on(t.agencyId, t.slug),
     // agency_id primero en todo índice: cada query real ya filtra por tenant.
+    // Este es el orden por defecto del listado de stock, así que es el índice
+    // que más se usa. Faltaba, y con volumen real el listado caía a scan
+    // secuencial: lo encontró `pnpm db:perf --bench`.
+    index('vehicles_agency_created_idx').on(t.agencyId, t.createdAt.desc(), t.id.desc()),
     index('vehicles_agency_status_updated_idx').on(t.agencyId, t.status, t.updatedAt.desc()),
     index('vehicles_agency_ownership_idx').on(t.agencyId, t.ownership, t.status),
     index('vehicles_agency_brand_model_idx').on(t.agencyId, t.brand, t.model),

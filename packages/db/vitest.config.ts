@@ -12,7 +12,6 @@ export default defineConfig({
      */
     testTimeout: 20_000,
     hookTimeout: 30_000,
-    setupFiles: ['@cuasar/db/env'],
     fileParallelism: false,
   },
 });
