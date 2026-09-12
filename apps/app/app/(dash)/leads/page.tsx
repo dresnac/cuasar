@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { LEAD_STATUSES, listLeads } from '@cuasar/core/services';
 import { can } from '@cuasar/core';
-import { LeadCard, LEAD_STATUS_META } from '@/components/lead-row';
+import { LEAD_STATUS_META } from '@/components/lead-meta';
+import { LeadCard } from '@/components/lead-row';
 import { Card, Empty, cx } from '@/components/ui';
 import { agencyTeam, requireSession } from '@/lib/tenant';
 

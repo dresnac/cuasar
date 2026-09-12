@@ -8,16 +8,9 @@ import {
   assignLeadAction,
   setLeadStatusAction,
 } from '@/app/(dash)/leads/actions';
+import { LEAD_SOURCE_LABEL, LEAD_STATUS_META } from './lead-meta';
 import { Alert, cx } from './ui';
 import { dateTime, relativeDays } from '@/lib/format';
-
-export const LEAD_STATUS_META: Record<LeadStatus, { label: string; chip: string }> = {
-  NEW: { label: 'Sin atender', chip: 'bg-signal-soft text-signal border-signal/25' },
-  CONTACTED: { label: 'Contactado', chip: 'bg-warm-soft text-warm border-warm/30' },
-  QUALIFIED: { label: 'Con visita', chip: 'bg-paper text-ink-soft border-line-strong' },
-  WON: { label: 'Vendido', chip: 'bg-fresh-soft text-fresh border-fresh/25' },
-  LOST: { label: 'Perdido', chip: 'bg-paper text-ink-faint border-line' },
-};
 
 const NEXT_STATUS: Partial<Record<LeadStatus, { to: LeadStatus; label: string }[]>> = {
   NEW: [
@@ -49,7 +42,10 @@ export function LeadCard({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const meta = LEAD_STATUS_META[lead.status];
+  const meta = LEAD_STATUS_META[lead.status] ?? {
+    label: lead.status,
+    chip: 'bg-paper text-ink-soft border-line-strong',
+  };
   const actions = NEXT_STATUS[lead.status] ?? [];
 
   const run = (fn: () => Promise<{ error?: string }>) =>
@@ -175,11 +171,4 @@ export function LeadCard({
   );
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  PUBLIC_SITE: 'del sitio',
-  WHATSAPP: 'por WhatsApp',
-  MELI: 'de MercadoLibre',
-  PHONE: 'por teléfono',
-  MANUAL: 'cargada a mano',
-};
-const sourceLabel = (source: string) => SOURCE_LABEL[source] ?? '';
+const sourceLabel = (source: string) => LEAD_SOURCE_LABEL[source] ?? '';
