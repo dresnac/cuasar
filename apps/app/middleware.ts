@@ -17,7 +17,6 @@ const isPublic = createRouteMatcher([
   '/crear-cuenta(.*)',
   '/api/webhooks(.*)',
   '/api/cron(.*)',
-  '/api/diag',
 ]);
 
 export default clerkMiddleware(

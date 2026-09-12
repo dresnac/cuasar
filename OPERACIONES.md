@@ -47,6 +47,30 @@ despliegue.
 
 ---
 
+## La región de las funciones tiene que ser la de la base
+
+`apps/*/vercel.json` fija `"regions": ["gru1"]`. **No es una preferencia, es la
+diferencia entre una aplicación usable y una que tarda tres segundos por clic.**
+
+Medido en producción, con la base en `sa-east-1` (São Paulo):
+
+| | funciones en `iad1` | funciones en `gru1` |
+|---|---|---|
+| `select 1` | 114 ms | 5 ms |
+| una transacción con contexto de tenant | 570 ms | 26 ms |
+| diez transacciones seguidas | 5.700 ms | 268 ms |
+
+Una acción de dominio son diez o quince transacciones. En `iad1` eso son varios
+segundos; en `gru1`, menos de medio.
+
+**La trampa que me costó dos intentos:** el header `x-vercel-id` de la respuesta
+dice `gru1` incluso cuando la función corre en `iad1`, porque esa es la región
+del proxy, no la de la función. Para saber dónde corre de verdad hay que leer
+`process.env.VERCEL_REGION` desde adentro. El default del proyecto era `iad1` y
+el header me hizo descartar la región como causa.
+
+Si algún día se mueve la base, hay que mover esto con ella.
+
 ## Base de datos
 
 ### Migrar
