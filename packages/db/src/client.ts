@@ -59,9 +59,12 @@ export async function withTenant<T>(
   fn: (tx: Tx, ctx: TenantCtx) => Promise<T>,
 ): Promise<T> {
   return dbAdmin.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.agency_id', ${ctx.agencyId}, true)`);
-    await tx.execute(sql`select set_config('app.user_id', ${ctx.userId}, true)`);
-    await tx.execute(sql`set local role app_tenant`);
+    // Un solo viaje para los tres settings: ver 0600_context.sql. Con la base
+    // a 150 ms de la función, tres sentencias sueltas antes de cada consulta
+    // eran la mitad del tiempo de respuesta.
+    await tx.execute(
+      sql`select set_tenant_context(${nullableUuid(ctx.agencyId)}, ${nullableUuid(ctx.userId)})`,
+    );
     return fn(tx, ctx);
   });
 }
@@ -77,11 +80,16 @@ export async function withPlatform<T>(
   fn: (tx: Tx) => Promise<T>,
 ): Promise<T> {
   return dbAdmin.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.user_id', ${actorUserId}, true)`);
-    await tx.execute(sql`set local role app_platform`);
+    await tx.execute(sql`select set_platform_context(${nullableUuid(actorUserId)})`);
     return fn(tx);
   });
 }
+
+/**
+ * Un id vacío pasa como NULL y no como cadena vacía: el contexto queda sin
+ * definir y las políticas fallan cerradas, que es lo que corresponde.
+ */
+const nullableUuid = (value: string | null | undefined) => (value ? value : null);
 
 export { client as pgClient };
 
@@ -100,8 +108,7 @@ export async function withPublicAgency<T>(
   fn: (tx: Tx) => Promise<T>,
 ): Promise<T> {
   return dbAdmin.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.agency_id', ${agencyId}, true)`);
-    await tx.execute(sql`set local role app_public`);
+    await tx.execute(sql`select set_public_context(${nullableUuid(agencyId)})`);
     return fn(tx);
   });
 }

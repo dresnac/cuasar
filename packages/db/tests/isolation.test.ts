@@ -41,11 +41,15 @@ let userOfB: string;
 const ctx = (agencyId: string) => ({ agencyId, userId: userOfB ?? agencyId, role: 'OWNER' as const });
 
 beforeAll(async () => {
+  // Las dos agencias del seed, nombradas explícitamente. Tomar "las primeras
+  // dos por slug" se rompía en cuanto alguien creaba una agencia de verdad en
+  // la base compartida: la nueva se colaba en el medio y el test fallaba por
+  // una razón que no tenía nada que ver con el aislamiento.
   const rows = await dbAdmin.execute<{ id: string; slug: string }>(
-    sql`select id, slug from agencies order by slug`,
+    sql`select id, slug from agencies where slug in ('del-sur', 'norte-motors') order by slug`,
   );
   if (rows.length < 2) {
-    throw new Error('Se necesitan al menos dos agencias seedeadas: pnpm db:seed');
+    throw new Error('Faltan las agencias del seed: pnpm db:seed');
   }
   A = rows[0]!.id;
   B = rows[1]!.id;

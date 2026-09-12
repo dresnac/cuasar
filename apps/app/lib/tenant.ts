@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { and, asc, dbAdmin, eq, schema, type Role, type TenantCtx } from '@cuasar/db';
+import { and, asc, dbAdmin, eq, ne, schema, type Role, type TenantCtx } from '@cuasar/db';
 import { entitlementsFor, type AccessLevel } from '@cuasar/core';
 import { activateInvitations, linkPendingInvitations } from '@cuasar/core/services';
 
@@ -28,11 +28,10 @@ export const currentLocalUser = cache(async () => {
     .where(eq(users.externalId, clerkId))
     .limit(1);
 
-  if (existing) {
-    // Alguien puede haber sido invitado a otra agencia después de su alta.
-    await activateInvitations(existing.id);
-    return existing;
-  }
+  // Las invitaciones pendientes se activan en `myMemberships`, que ya consulta
+  // esa tabla. Hacerlo acá costaba un UPDATE en cada request del día para
+  // atender un caso que ocurre una vez en la vida de cada usuario.
+  if (existing) return existing;
 
   // Primer ingreso: espejamos el usuario de Clerk. No guardamos credenciales.
   const clerkUser = await currentUser();
@@ -77,10 +76,26 @@ export type Membership = {
   role: Role;
 };
 
-export const myMemberships = cache(async (): Promise<Membership[]> => {
+type MembershipWithBilling = Membership & {
+  agencyStatus: 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
+  subscriptionStatus: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | null;
+  gracePeriodEndsAt: Date | null;
+  includedSeats: number | null;
+  seatsPurchased: number | null;
+  pending: boolean;
+};
+
+/**
+ * Las agencias de esta persona, con el estado de cobro de cada una.
+ *
+ * Una sola consulta y no dos: el nivel de acceso depende de la suscripción y
+ * del plan, y traerlo en el mismo join ahorra un viaje a la base en cada
+ * request. Con la base a 150 ms de la función, cada viaje se nota.
+ */
+const myMembershipRows = cache(async (): Promise<MembershipWithBilling[]> => {
   const user = await currentLocalUser();
 
-  return dbAdmin
+  const rows = await dbAdmin
     .select({
       agencyId: agencies.id,
       agencyName: agencies.name,
@@ -88,12 +103,52 @@ export const myMemberships = cache(async (): Promise<Membership[]> => {
       baseCurrency: agencies.baseCurrency,
       timezone: agencies.timezone,
       role: memberships.role,
+      status: memberships.status,
+      agencyStatus: agencies.status,
+      subscriptionStatus: subscriptions.status,
+      gracePeriodEndsAt: subscriptions.gracePeriodEndsAt,
+      includedSeats: plans.includedSeats,
+      seatsPurchased: subscriptions.seatsPurchased,
     })
     .from(memberships)
     .innerJoin(agencies, eq(agencies.id, memberships.agencyId))
-    .where(and(eq(memberships.userId, user.id), eq(memberships.status, 'ACTIVE')))
+    .leftJoin(subscriptions, eq(subscriptions.agencyId, agencies.id))
+    .leftJoin(plans, eq(plans.code, subscriptions.planCode))
+    .where(and(eq(memberships.userId, user.id), ne(memberships.status, 'DISABLED')))
     .orderBy(asc(agencies.name));
+
+  // Si la invitaron antes de que tuviera cuenta, esta es la primera vez que la
+  // vemos entrar: se activa acá, una sola vez, y no en cada request.
+  if (rows.some((r) => r.status === 'INVITED')) {
+    await activateInvitations(user.id);
+  }
+
+  return rows.map((r) => ({
+    agencyId: r.agencyId,
+    agencyName: r.agencyName,
+    agencySlug: r.agencySlug,
+    baseCurrency: r.baseCurrency,
+    timezone: r.timezone,
+    role: r.role as Role,
+    agencyStatus: r.agencyStatus,
+    subscriptionStatus: r.subscriptionStatus,
+    gracePeriodEndsAt: r.gracePeriodEndsAt,
+    includedSeats: r.includedSeats,
+    seatsPurchased: r.seatsPurchased,
+    pending: r.status === 'INVITED',
+  }));
 });
+
+export const myMemberships = cache(async (): Promise<Membership[]> =>
+  (await myMembershipRows()).map(({ agencyId, agencyName, agencySlug, baseCurrency, timezone, role }) => ({
+    agencyId,
+    agencyName,
+    agencySlug,
+    baseCurrency,
+    timezone,
+    role,
+  })),
+);
 
 export type Session = {
   ctx: TenantCtx;
@@ -110,44 +165,15 @@ export type Session = {
  */
 export const requireSession = cache(async (): Promise<Session> => {
   const user = await currentLocalUser();
-  const all = await myMemberships();
+  const rows = await myMembershipRows();
 
-  if (all.length === 0) redirect('/alta-agencia');
+  if (rows.length === 0) redirect('/alta-agencia');
 
   const jar = await cookies();
   const preferred = jar.get(ACTIVE_AGENCY_COOKIE)?.value;
-  const agency = all.find((m) => m.agencyId === preferred) ?? all[0]!;
+  const row = rows.find((m) => m.agencyId === preferred) ?? rows[0]!;
 
-  const access = await accessLevelFor(agency.agencyId);
-  if (access === 'BLOCKED') redirect('/cuenta-bloqueada');
-
-  return {
-    ctx: { agencyId: agency.agencyId, userId: user.id, role: agency.role },
-    user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
-    agency,
-    memberships: all,
-    access,
-  };
-});
-
-async function accessLevelFor(agencyId: string): Promise<AccessLevel> {
-  const [row] = await dbAdmin
-    .select({
-      agencyStatus: agencies.status,
-      subscriptionStatus: subscriptions.status,
-      gracePeriodEndsAt: subscriptions.gracePeriodEndsAt,
-      seatsPurchased: subscriptions.seatsPurchased,
-      includedSeats: plans.includedSeats,
-    })
-    .from(agencies)
-    .leftJoin(subscriptions, eq(subscriptions.agencyId, agencies.id))
-    .leftJoin(plans, eq(plans.code, subscriptions.planCode))
-    .where(eq(agencies.id, agencyId))
-    .limit(1);
-
-  if (!row) return 'BLOCKED';
-
-  return entitlementsFor({
+  const access = entitlementsFor({
     agencyStatus: row.agencyStatus,
     subscriptionStatus: row.subscriptionStatus ?? 'TRIALING',
     gracePeriodEndsAt: row.gracePeriodEndsAt,
@@ -155,7 +181,19 @@ async function accessLevelFor(agencyId: string): Promise<AccessLevel> {
     seatsPurchased: row.seatsPurchased ?? 5,
     activeMembers: 0,
   }).backoffice;
-}
+
+  if (access === 'BLOCKED') redirect('/cuenta-bloqueada');
+
+  const { agencyId, agencyName, agencySlug, baseCurrency, timezone, role } = row;
+
+  return {
+    ctx: { agencyId, userId: user.id, role },
+    user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl },
+    agency: { agencyId, agencyName, agencySlug, baseCurrency, timezone, role },
+    memberships: await myMemberships(),
+    access,
+  };
+});
 
 export async function switchAgency(agencyId: string) {
   const all = await myMemberships();
