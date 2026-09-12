@@ -54,11 +54,14 @@ diferencia entre una aplicación usable y una que tarda tres segundos por clic.*
 
 Medido en producción, con la base en `sa-east-1` (São Paulo):
 
-| | funciones en `iad1` | funciones en `gru1` |
-|---|---|---|
-| `select 1` | 114 ms | 5 ms |
-| una transacción con contexto de tenant | 570 ms | 26 ms |
-| diez transacciones seguidas | 5.700 ms | 268 ms |
+| | funciones en `iad1` | `gru1`, instancia fría | `gru1`, caliente |
+|---|---|---|---|
+| `select 1` | 114 ms | 5 ms | 1 ms |
+| una transacción con contexto de tenant | 570 ms | 26 ms | 4 ms |
+| diez transacciones seguidas | 5.700 ms | 268 ms | 39 ms |
+
+La columna caliente es la que ve alguien trabajando; la fría, el primer clic
+después de un rato. Las dos son aceptables, la de `iad1` no.
 
 Una acción de dominio son diez o quince transacciones. En `iad1` eso son varios
 segundos; en `gru1`, menos de medio.
